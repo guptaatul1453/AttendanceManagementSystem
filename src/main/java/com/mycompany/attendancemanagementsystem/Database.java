@@ -1,14 +1,15 @@
 package com.mycompany.attendancemanagementsystem;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+import javax.servlet.ServletContext;
 
 import io.github.cdimascio.dotenv.Dotenv;
-import javax.servlet.ServletContext;
 
 public final class Database {
     private static volatile Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
