@@ -4,8 +4,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.Driver;
 import java.sql.SQLException;
+import java.util.Properties;
 
 import javax.servlet.ServletContext;
 
@@ -18,10 +19,23 @@ public final class Database {
     }
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(
-                value("DB_URL", "jdbc:mysql://localhost:3306/attendance_management?serverTimezone=UTC"),
-                value("DB_USER", "root"),
-                value("DB_PASSWORD", ""));
+        String url = value("DB_URL", "jdbc:mysql://localhost:3306/attendance_management?serverTimezone=UTC");
+        Properties properties = new Properties();
+        properties.setProperty("user", value("DB_USER", "root"));
+        properties.setProperty("password", value("DB_PASSWORD", ""));
+        try {
+            Driver driver = Class.forName("com.mysql.cj.jdbc.Driver")
+                    .asSubclass(Driver.class)
+                    .getDeclaredConstructor()
+                    .newInstance();
+            Connection connection = driver.connect(url, properties);
+            if (connection == null) {
+                throw new SQLException("MySQL JDBC driver rejected DB_URL");
+            }
+            return connection;
+        } catch (ReflectiveOperationException | ClassCastException exception) {
+            throw new SQLException("MySQL JDBC driver is not available", exception);
+        }
     }
 
     public static String adminPassword() {

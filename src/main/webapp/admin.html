@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#091522">
-    <title>Attendance Admin / Northstar</title>
+    <meta name="theme-color" content="#edf3f2">
+    <title>Daywork / Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,18 +12,17 @@
 </head>
 <body class="admin-body">
     <header class="admin-topbar">
-        <a class="brand" href="./" aria-label="Northstar attendance home">
+        <a class="brand" href="./" aria-label="Daywork attendance home">
             <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-            <span>northstar<span class="brand-light"> / people</span></span>
+            <span>daywork<span class="brand-light"> / people</span></span>
         </a>
-        <div class="admin-top-actions"><span class="live-indicator"><i></i> ADMIN WORKSPACE</span><button id="logout-button" class="text-button hidden" type="button">Sign out <span aria-hidden="true">↗</span></button></div>
+        <div class="admin-top-actions"><a class="return-link" href="./"><span aria-hidden="true">←</span> Back to attendance</a><button id="logout-button" class="text-button hidden" type="button">Sign out</button></div>
     </header>
 
     <main id="login-view" class="login-shell hidden">
         <form id="login-form" class="login-panel">
-            <span class="section-kicker">NORTHSTAR / ADMINISTRATION</span>
-            <h1>Welcome back.</h1>
-            <p>Sign in to manage attendance and employee records.</p>
+            <span class="section-kicker">DAYWORK / ADMIN</span>
+            <h1>Admin sign in</h1>
             <div class="form-field"><label for="admin-password">ADMIN PASSWORD</label><input class="form-input" id="admin-password" type="password" autocomplete="current-password" required></div>
             <button class="button button-primary" type="submit">Sign in <span class="button-arrow" aria-hidden="true">→</span></button>
             <p id="login-message" class="login-message" role="status" aria-live="polite"></p>
@@ -67,13 +66,15 @@
 
         <section id="employees-view" class="admin-content admin-view hidden">
             <div class="admin-page-heading">
-                <div><span class="section-kicker">PEOPLE OPERATIONS / DIRECTORY</span><h1>Employees</h1><p>Create an employee profile and assign their attendance code.</p></div>
+                <div><span class="section-kicker">DAYWORK / DIRECTORY</span><h1>Employees</h1><p>Profiles, roles, and access codes.</p></div>
             </div>
             <form id="employee-form" class="add-employee">
                 <div class="form-field"><label for="employee-name">FULL NAME</label><input class="form-input" id="employee-name" maxlength="120" required></div>
+                <div class="form-field"><label for="employee-code">EMPLOYEE CODE</label><input class="form-input" id="employee-code" maxlength="24" placeholder="Auto-generated if blank"></div>
                 <div class="form-field"><label for="employee-department">DEPARTMENT</label><input class="form-input" id="employee-department" maxlength="120" required></div>
+                <div class="form-field"><label for="employee-position">POSITION</label><input class="form-input" id="employee-position" maxlength="120" required></div>
                 <div class="form-field"><label for="employee-email">EMAIL <span>(OPTIONAL)</span></label><input class="form-input" id="employee-email" type="email" maxlength="180"></div>
-                <button class="button button-primary" type="submit">Add employee <span aria-hidden="true">+</span></button>
+                <div class="employee-form-actions"><button class="button button-primary" id="employee-submit" type="submit">Add employee <span aria-hidden="true">+</span></button><button class="button button-secondary hidden" id="employee-cancel" type="button">Cancel edit</button></div>
             </form>
             <p id="employee-message" class="table-message" role="status"></p>
             <div class="section-toolbar"><h2>Employee directory</h2><span id="employee-count"></span></div>

@@ -80,12 +80,60 @@ public class AdminServlet extends HttpServlet {
                 HttpJson.error(response, HttpServletResponse.SC_NOT_FOUND, "Not found.");
             }
         } catch (SQLException exception) {
-            getServletContext().log("Admin database operation failed", exception);
-            HttpJson.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "The request could not be completed. Check the database configuration.");
+            writeDatabaseError(response, exception);
         } catch (RuntimeException exception) {
             HttpJson.error(response, HttpServletResponse.SC_BAD_REQUEST, "The request could not be read.");
         }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        if (!"/api/employees".equals(request.getPathInfo())) {
+            HttpJson.error(response, HttpServletResponse.SC_NOT_FOUND, "Not found.");
+            return;
+        }
+        if (!isAuthenticated(request)) {
+            HttpJson.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Admin login required.");
+            return;
+        }
+        try {
+            updateEmployee(request, response);
+        } catch (SQLException exception) {
+            writeDatabaseError(response, exception);
+        } catch (RuntimeException exception) {
+            HttpJson.error(response, HttpServletResponse.SC_BAD_REQUEST, "The request could not be read.");
+        }
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        if (!"/api/employees".equals(request.getPathInfo())) {
+            HttpJson.error(response, HttpServletResponse.SC_NOT_FOUND, "Not found.");
+            return;
+        }
+        if (!isAuthenticated(request)) {
+            HttpJson.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Admin login required.");
+            return;
+        }
+        try {
+            deleteEmployee(request, response);
+        } catch (SQLException exception) {
+            writeDatabaseError(response, exception);
+        } catch (RuntimeException exception) {
+            HttpJson.error(response, HttpServletResponse.SC_BAD_REQUEST, "The request could not be read.");
+        }
+    }
+
+    private void writeDatabaseError(HttpServletResponse response, SQLException exception) throws IOException {
+        if (exception.getSQLState() != null && exception.getSQLState().startsWith("23")) {
+            HttpJson.error(response, HttpServletResponse.SC_CONFLICT, "Employee code already exists.");
+            return;
+        }
+        getServletContext().log("Admin database operation failed", exception);
+        HttpJson.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                "The request could not be completed. Check the database configuration.");
     }
 
     private void login(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -124,10 +172,10 @@ public class AdminServlet extends HttpServlet {
         String date = request.getParameter("date");
         String status = request.getParameter("status");
         StringBuilder sql = new StringBuilder(
-                "SELECT a.id, e.employee_code, e.full_name, e.department, a.recorded_at, a.check_out_at "
+            "SELECT a.id, e.employee_code, e.full_name, e.department, e.position_title, a.recorded_at, a.check_out_at "
                 + "FROM attendance a JOIN employees e ON e.id = a.employee_id WHERE 1 = 1");
         if (query != null && !query.trim().isEmpty()) {
-            sql.append(" AND (e.employee_code LIKE ? OR e.full_name LIKE ? OR e.department LIKE ?)");
+            sql.append(" AND (e.employee_code LIKE ? OR e.full_name LIKE ? OR e.department LIKE ? OR e.position_title LIKE ?)");
         }
         if (date != null && date.matches("\\d{4}-\\d{2}-\\d{2}")) {
             sql.append(" AND DATE(a.recorded_at) = ?");
@@ -148,6 +196,7 @@ public class AdminServlet extends HttpServlet {
                 statement.setString(parameter++, pattern);
                 statement.setString(parameter++, pattern);
                 statement.setString(parameter++, pattern);
+                statement.setString(parameter++, pattern);
             }
             if (date != null && date.matches("\\d{4}-\\d{2}-\\d{2}")) {
                 statement.setString(parameter, date);
@@ -159,6 +208,7 @@ public class AdminServlet extends HttpServlet {
                             .add("employeeCode", result.getString("employee_code"))
                             .add("fullName", result.getString("full_name"))
                             .add("department", result.getString("department"))
+                            .add("positionTitle", result.getString("position_title"))
                             .add("checkin", result.getTimestamp("recorded_at").toLocalDateTime().toString());
                     Timestamp checkout = result.getTimestamp("check_out_at");
                     if (checkout == null) {
@@ -177,14 +227,16 @@ public class AdminServlet extends HttpServlet {
         JsonArrayBuilder rows = Json.createArrayBuilder();
         try (Connection connection = Database.getConnection();
                 PreparedStatement statement = connection.prepareStatement(
-                        "SELECT id, employee_code, full_name, department, email FROM employees ORDER BY full_name")) {
+                        "SELECT id, employee_code, full_name, department, position_title, email "
+                        + "FROM employees ORDER BY full_name")) {
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
                     JsonObjectBuilder employee = Json.createObjectBuilder()
                             .add("id", result.getLong("id"))
                             .add("employeeCode", result.getString("employee_code"))
                             .add("fullName", result.getString("full_name"))
-                            .add("department", result.getString("department"));
+                            .add("department", result.getString("department"))
+                            .add("positionTitle", result.getString("position_title"));
                     String email = result.getString("email");
                     if (email == null) {
                         employee.addNull("email");
@@ -230,26 +282,41 @@ public class AdminServlet extends HttpServlet {
         JsonObject body = HttpJson.read(request);
         String name = body.getString("fullName", "").trim();
         String department = body.getString("department", "").trim();
+        String position = body.getString("positionTitle", "").trim();
         String email = body.getString("email", "").trim();
-        if (name.isEmpty() || name.length() > 120 || department.isEmpty() || department.length() > 120
-                || email.length() > 180) {
+        String code = body.getString("employeeCode", "").trim().toUpperCase(Locale.ROOT);
+        if (!validEmployeeFields(name, department, position, email, response)) {
+            return;
+        }
+        if (!code.isEmpty() && !validEmployeeCode(code)) {
             HttpJson.error(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "Name and department are required. Check field lengths.");
+                    "Employee code must be 1–24 letters, numbers, hyphens, or underscores.");
             return;
         }
         try (Connection connection = Database.getConnection()) {
             connection.setAutoCommit(false);
             try {
+                if (!code.isEmpty() && employeeCodeExists(connection, code, 0)) {
+                    connection.rollback();
+                    HttpJson.error(response, HttpServletResponse.SC_CONFLICT, "That employee code is already in use.");
+                    return;
+                }
                 long id;
                 try (PreparedStatement statement = connection.prepareStatement(
-                        "INSERT INTO employees (employee_code, full_name, department, email, created_at) "
-                        + "VALUES (NULL, ?, ?, ?, CURRENT_TIMESTAMP)", PreparedStatement.RETURN_GENERATED_KEYS)) {
-                    statement.setString(1, name);
-                    statement.setString(2, department);
-                    if (email.isEmpty()) {
-                        statement.setNull(3, java.sql.Types.VARCHAR);
+                        "INSERT INTO employees (employee_code, full_name, department, position_title, email, created_at) "
+                        + "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)", PreparedStatement.RETURN_GENERATED_KEYS)) {
+                    if (code.isEmpty()) {
+                        statement.setNull(1, java.sql.Types.VARCHAR);
                     } else {
-                        statement.setString(3, email);
+                        statement.setString(1, code);
+                    }
+                    statement.setString(2, name);
+                    statement.setString(3, department);
+                    statement.setString(4, position);
+                    if (email.isEmpty()) {
+                        statement.setNull(5, java.sql.Types.VARCHAR);
+                    } else {
+                        statement.setString(5, email);
                     }
                     statement.executeUpdate();
                     try (ResultSet keys = statement.getGeneratedKeys()) {
@@ -259,22 +326,134 @@ public class AdminServlet extends HttpServlet {
                         id = keys.getLong(1);
                     }
                 }
-                String code = String.format(Locale.ROOT, "EMP%03d", id);
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE employees SET employee_code = ? WHERE id = ?")) {
-                    statement.setString(1, code);
-                    statement.setLong(2, id);
-                    statement.executeUpdate();
+                if (code.isEmpty()) {
+                    code = String.format(Locale.ROOT, "EMP%03d", id);
+                    if (employeeCodeExists(connection, code, id)) {
+                        connection.rollback();
+                        HttpJson.error(response, HttpServletResponse.SC_CONFLICT,
+                                "Generated employee code is already in use; enter a custom code instead.");
+                        return;
+                    }
+                    try (PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE employees SET employee_code = ? WHERE id = ?")) {
+                        statement.setString(1, code);
+                        statement.setLong(2, id);
+                        statement.executeUpdate();
+                    }
                 }
                 connection.commit();
                 HttpJson.write(response, HttpServletResponse.SC_CREATED, Json.createObjectBuilder()
                         .add("employeeCode", code)
                         .add("fullName", name)
+                        .add("positionTitle", position)
                         .build());
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             }
         }
+    }
+
+    private void updateEmployee(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        JsonObject body = HttpJson.read(request);
+        long id = body.getJsonNumber("id").longValue();
+        String code = body.getString("employeeCode", "").trim().toUpperCase(Locale.ROOT);
+        String name = body.getString("fullName", "").trim();
+        String department = body.getString("department", "").trim();
+        String position = body.getString("positionTitle", "").trim();
+        String email = body.getString("email", "").trim();
+        if (id < 1 || !validEmployeeCode(code)) {
+            HttpJson.error(response, HttpServletResponse.SC_BAD_REQUEST, "Enter a valid employee ID and code.");
+            return;
+        }
+        if (!validEmployeeFields(name, department, position, email, response)) {
+            return;
+        }
+        try (Connection connection = Database.getConnection()) {
+            if (employeeCodeExists(connection, code, id)) {
+                HttpJson.error(response, HttpServletResponse.SC_CONFLICT, "That employee code is already in use.");
+                return;
+            }
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE employees SET employee_code = ?, full_name = ?, department = ?, "
+                    + "position_title = ?, email = ? WHERE id = ?")) {
+                statement.setString(1, code);
+                statement.setString(2, name);
+                statement.setString(3, department);
+                statement.setString(4, position);
+                if (email.isEmpty()) {
+                    statement.setNull(5, java.sql.Types.VARCHAR);
+                } else {
+                    statement.setString(5, email);
+                }
+                statement.setLong(6, id);
+                if (statement.executeUpdate() == 0) {
+                    HttpJson.error(response, HttpServletResponse.SC_NOT_FOUND, "Employee not found.");
+                    return;
+                }
+            }
+        }
+        HttpJson.write(response, HttpServletResponse.SC_OK, Json.createObjectBuilder()
+                .add("employeeCode", code)
+                .add("fullName", name)
+                .build());
+    }
+
+    private void deleteEmployee(HttpServletRequest request, HttpServletResponse response)
+            throws SQLException, IOException {
+        String idValue = request.getParameter("id");
+        if (idValue == null || !idValue.matches("\\d+")) {
+            HttpJson.error(response, HttpServletResponse.SC_BAD_REQUEST, "Invalid employee ID.");
+            return;
+        }
+        long id = Long.parseLong(idValue);
+        try (Connection connection = Database.getConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT 1 FROM attendance WHERE employee_id = ? LIMIT 1")) {
+                statement.setLong(1, id);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
+                        HttpJson.error(response, HttpServletResponse.SC_CONFLICT,
+                                "This employee has attendance history and cannot be deleted.");
+                        return;
+                    }
+                }
+            }
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM employees WHERE id = ?")) {
+                statement.setLong(1, id);
+                if (statement.executeUpdate() == 0) {
+                    HttpJson.error(response, HttpServletResponse.SC_NOT_FOUND, "Employee not found.");
+                    return;
+                }
+            }
+        }
+        HttpJson.write(response, HttpServletResponse.SC_OK, Json.createObjectBuilder().add("ok", true).build());
+    }
+
+    private boolean employeeCodeExists(Connection connection, String code, long exceptId) throws SQLException {
+        String sql = "SELECT 1 FROM employees WHERE employee_code = ? AND id <> ? LIMIT 1";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, code);
+            statement.setLong(2, exceptId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next();
+            }
+        }
+    }
+
+    private boolean validEmployeeCode(String code) {
+        return code.matches("[A-Z0-9_-]{1,24}");
+    }
+
+    private boolean validEmployeeFields(String name, String department, String position, String email,
+            HttpServletResponse response) throws IOException {
+        if (name.isEmpty() || name.length() > 120 || department.isEmpty() || department.length() > 120
+                || position.isEmpty() || position.length() > 120 || email.length() > 180) {
+            HttpJson.error(response, HttpServletResponse.SC_BAD_REQUEST,
+                    "Name, department, and position are required. Check field lengths.");
+            return false;
+        }
+        return true;
     }
 }

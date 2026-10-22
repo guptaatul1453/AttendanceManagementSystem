@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#091522">
-    <title>Northstar Attendance</title>
+    <meta name="theme-color" content="#edf3f2">
+    <title>Daywork / Attendance</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,11 +12,15 @@
 </head>
 <body class="kiosk-page">
     <header class="topbar">
-        <a class="brand" href="./" aria-label="Northstar Attendance home">
+        <a class="brand" href="./" aria-label="Daywork Attendance home">
             <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-            <span>northstar<span class="brand-light"> / people</span></span>
+            <span>daywork<span class="brand-light"> / people</span></span>
         </a>
         <div class="topbar-right">
+            <div class="theme-switch" role="group" aria-label="Color theme">
+                <button class="theme-button is-active" type="button" data-theme-choice="light" aria-label="Light mode" title="Light mode" aria-pressed="true"><span aria-hidden="true">☀</span></button>
+                <button class="theme-button" type="button" data-theme-choice="dark" aria-label="Dark mode" title="Dark mode" aria-pressed="false"><span aria-hidden="true">☾</span></button>
+            </div>
             <span class="live-indicator"><i></i> ATTENDANCE PORTAL</span>
             <a class="admin-link" href="admin">Admin <span aria-hidden="true">↗</span></a>
         </div>
@@ -24,16 +28,16 @@
 
     <main class="kiosk-layout">
         <section class="kiosk-copy" aria-labelledby="page-title">
-            <div class="eyebrow"><span class="eyebrow-line"></span> EMPLOYEE CHECKPOINT</div>
-            <h1 id="page-title">Make today<br><span>count.</span></h1>
-            <p class="intro-copy">A quick check-in keeps your day in motion. Enter your employee code and take a current photo to record your attendance.</p>
+            <div class="eyebrow"><span class="eyebrow-line"></span> ATTENDANCE</div>
+            <h1 id="page-title">Start your<br><span>shift.</span></h1>
+            <p class="intro-copy">Check in or out with your employee code and a quick photo.</p>
             <div class="today-line"><span class="today-dot"></span><span id="current-date">Loading today's date</span><span class="today-divider">/</span><span id="current-time">--:--</span></div>
-            <div class="privacy-note"><span class="lock-icon" aria-hidden="true">▣</span><span>Your photo is stored with this record and visible to administrators.</span></div>
+            <div class="privacy-note"><span class="lock-icon" aria-hidden="true">▣</span><span>Attendance photos are visible to administrators.</span></div>
         </section>
 
         <section class="attendance-panel" aria-label="Attendance capture">
             <div class="panel-heading">
-                <div><span class="section-kicker">01 / YOUR ATTENDANCE</span><h2>Ready when you are</h2></div>
+                <div><span class="section-kicker">YOUR SHIFT</span><h2>Record attendance</h2></div>
                 <span class="panel-step">01 <span>/</span> 03</span>
             </div>
             <div class="mode-switch" role="group" aria-label="Attendance action">
@@ -47,7 +51,7 @@
                 <div class="camera-frame" id="camera-frame">
                     <video id="camera-preview" autoplay playsinline muted></video>
                     <img id="captured-photo" alt="Captured attendance photo">
-                    <div class="camera-placeholder" id="camera-placeholder"><span class="camera-glyph" aria-hidden="true">◎</span><span>Camera preview will appear here</span></div>
+                    <div class="camera-placeholder" id="camera-placeholder"><span class="camera-glyph" aria-hidden="true">◎</span><span>Camera is off</span></div>
                     <div class="camera-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
                     <span class="camera-badge"><i></i> LIVE CAPTURE</span>
                 </div>
@@ -59,10 +63,10 @@
                 <button class="button button-primary submit-button" id="submit-button" type="submit" disabled><span id="submit-label">Capture photo to continue</span><span class="button-arrow" aria-hidden="true">→</span></button>
                 <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
             </form>
-            <div class="panel-foot"><span>SECURE ATTENDANCE RECORD</span><span>EST. 2024 <b>·</b> NORTHSTAR</span></div>
+            <div class="panel-foot"><span>ATTENDANCE RECORD</span><span>DAYWORK <b>·</b> PEOPLE</span></div>
         </section>
     </main>
-    <footer class="page-footer"><span>© Northstar People Operations</span><span>NEED HELP? CONTACT YOUR TEAM ADMINISTRATOR</span></footer>
+    <footer class="page-footer"><span>DAYWORK / PEOPLE</span><span>CONTACT YOUR ADMIN FOR HELP</span></footer>
     <script src="app.js"></script>
 </body>
 </html>

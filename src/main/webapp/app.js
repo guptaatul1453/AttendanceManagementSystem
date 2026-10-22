@@ -1,4 +1,5 @@
 (() => {
+    const themeButtons = [...document.querySelectorAll(".theme-button")];
     const modeButtons = [...document.querySelectorAll(".mode-button")];
     const codeInput = document.getElementById("employee-code");
     const video = document.getElementById("camera-preview");
@@ -16,6 +17,23 @@
     let stream;
     let capturedPhoto = "";
     let mode = "checkin";
+
+    function setTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        themeButtons.forEach((button) => {
+            const active = button.dataset.themeChoice === theme;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", String(active));
+        });
+        document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#101e26" : "#edf3f2";
+        localStorage.setItem("attendance-theme", theme);
+    }
+
+    const savedTheme = localStorage.getItem("attendance-theme");
+    setTheme(savedTheme === "dark" ? "dark" : "light");
+    themeButtons.forEach((button) => button.addEventListener("click", () => {
+        setTheme(button.dataset.themeChoice);
+    }));
 
     function updateClock() {
         const now = new Date();

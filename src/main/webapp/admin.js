@@ -10,7 +10,11 @@
     const employeeList = document.getElementById("employee-list");
     const employeeMessage = document.getElementById("employee-message");
     const modal = document.getElementById("photo-modal");
+    const employeeForm = document.getElementById("employee-form");
+    const employeeSubmit = document.getElementById("employee-submit");
+    const employeeCancel = document.getElementById("employee-cancel");
     let loadedRows = [];
+    let editingEmployeeId = null;
 
     function endpoint(path) {
         return new URL(path, adminBase).toString();
@@ -104,6 +108,10 @@
             employee.innerHTML = "<div class=\"employee-cell\"><strong></strong><span></span></div>";
             employee.querySelector("strong").textContent = row.fullName;
             employee.querySelector("span").textContent = row.employeeCode + " · " + row.department;
+            const position = document.createElement("span");
+            position.className = "position-tag";
+            position.textContent = row.positionTitle;
+            employee.querySelector(".employee-cell").append(position);
             tr.append(employee);
             tr.append(textCell(formatDate(row.checkin)));
             tr.append(textCell(row.checkout ? formatDate(row.checkout) : "—"));
@@ -173,11 +181,31 @@
                 name.textContent = employee.fullName;
                 const department = document.createElement("span");
                 department.textContent = employee.department;
+                const position = document.createElement("span");
+                position.className = "position-tag";
+                position.textContent = employee.positionTitle;
                 const code = document.createElement("span");
                 code.className = "employee-code";
                 code.textContent = employee.employeeCode;
-                details.append(name, department);
-                item.append(details, code);
+                details.append(name, position, department, code);
+                const actions = document.createElement("div");
+                actions.className = "employee-actions";
+                const editButton = document.createElement("button");
+                editButton.className = "employee-action";
+                editButton.type = "button";
+                editButton.title = "Edit employee";
+                editButton.setAttribute("aria-label", "Edit " + employee.fullName);
+                editButton.textContent = "Edit";
+                editButton.addEventListener("click", () => editEmployee(employee));
+                const deleteButton = document.createElement("button");
+                deleteButton.className = "employee-action delete";
+                deleteButton.type = "button";
+                deleteButton.title = "Delete employee";
+                deleteButton.setAttribute("aria-label", "Delete " + employee.fullName);
+                deleteButton.textContent = "×";
+                deleteButton.addEventListener("click", () => removeEmployee(employee));
+                actions.append(editButton, deleteButton);
+                item.append(details, actions);
                 employeeList.append(item);
             });
         } catch (error) {
@@ -186,31 +214,75 @@
         }
     }
 
-    document.getElementById("employee-form").addEventListener("submit", async (event) => {
+    employeeForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        employeeMessage.textContent = "Creating employee...";
-        const form = event.currentTarget;
-        const button = form.querySelector("button[type=submit]");
-        button.disabled = true;
+        employeeMessage.textContent = editingEmployeeId === null ? "Adding employee..." : "Saving changes...";
+        employeeSubmit.disabled = true;
         try {
+            const employee = {
+                fullName: document.getElementById("employee-name").value,
+                employeeCode: document.getElementById("employee-code").value,
+                department: document.getElementById("employee-department").value,
+                positionTitle: document.getElementById("employee-position").value,
+                email: document.getElementById("employee-email").value
+            };
+            if (editingEmployeeId !== null) employee.id = editingEmployeeId;
             const result = await request("api/employees", {
-                method: "POST",
+                method: editingEmployeeId === null ? "POST" : "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fullName: document.getElementById("employee-name").value,
-                    department: document.getElementById("employee-department").value,
-                    email: document.getElementById("employee-email").value
-                })
+                body: JSON.stringify(employee)
             });
-            form.reset();
-            employeeMessage.textContent = result.fullName + " added with code " + result.employeeCode + ".";
+            employeeMessage.textContent = editingEmployeeId === null
+                ? result.fullName + " added · " + result.employeeCode
+                : result.fullName + " updated";
+            resetEmployeeForm();
             await loadEmployees();
+            await loadAttendance();
         } catch (error) {
             employeeMessage.textContent = error.message;
         } finally {
-            button.disabled = false;
+            employeeSubmit.disabled = false;
         }
     });
+
+    function editEmployee(employee) {
+        editingEmployeeId = employee.id;
+        document.getElementById("employee-name").value = employee.fullName;
+        document.getElementById("employee-code").value = employee.employeeCode;
+        document.getElementById("employee-department").value = employee.department;
+        document.getElementById("employee-position").value = employee.positionTitle;
+        document.getElementById("employee-email").value = employee.email || "";
+        employeeSubmit.innerHTML = "Save changes <span aria-hidden=\"true\">✓</span>";
+        employeeCancel.classList.remove("hidden");
+        employeeMessage.textContent = "Editing " + employee.fullName;
+        document.getElementById("employee-name").focus();
+        employeeForm.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function resetEmployeeForm() {
+        editingEmployeeId = null;
+        employeeForm.reset();
+        employeeSubmit.innerHTML = "Add employee <span aria-hidden=\"true\">+</span>";
+        employeeCancel.classList.add("hidden");
+    }
+
+    employeeCancel.addEventListener("click", () => {
+        resetEmployeeForm();
+        employeeMessage.textContent = "Edit cancelled";
+    });
+
+    async function removeEmployee(employee) {
+        if (!window.confirm("Delete " + employee.fullName + "? Employees with attendance history cannot be deleted.")) return;
+        employeeMessage.textContent = "Deleting employee...";
+        try {
+            await request("api/employees?id=" + encodeURIComponent(employee.id), { method: "DELETE" });
+            employeeMessage.textContent = employee.fullName + " deleted";
+            if (editingEmployeeId === employee.id) resetEmployeeForm();
+            await loadEmployees();
+        } catch (error) {
+            employeeMessage.textContent = error.message;
+        }
+    }
 
     document.querySelectorAll(".side-nav button").forEach((button) => button.addEventListener("click", () => {
         document.querySelectorAll(".side-nav button").forEach((item) => item.classList.toggle("active", item === button));
