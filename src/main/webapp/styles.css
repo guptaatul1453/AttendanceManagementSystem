@@ -172,6 +172,7 @@ html[data-theme="dark"] .button-primary:hover:not(:disabled) { background: #91ec
 .admin-body { min-height: 100vh; background: var(--canvas); }
 .admin-topbar { position: sticky; top: 0; z-index: 10; height: 68px; display: flex; justify-content: space-between; align-items: center; padding: 0 4vw; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .94); backdrop-filter: blur(12px); }
 .admin-top-actions { display: flex; align-items: center; gap: 22px; color: #637782; font: 9px var(--mono); }
+.admin-top-actions .theme-switch { flex-shrink: 0; }
 .return-link { display: inline-flex; align-items: center; gap: 8px; color: #385364; font: 11px var(--font); }
 .return-link:hover { color: var(--teal); }
 .return-link span { color: var(--teal); font-size: 15px; }
@@ -253,6 +254,53 @@ html[data-theme="dark"] .button-primary:hover:not(:disabled) { background: #91ec
 .photo-modal img { display: block; max-width: min(900px, 92vw); max-height: 82vh; border: 1px solid rgba(212, 229, 240, .18); border-radius: 5px; object-fit: contain; }
 .modal-close { position: absolute; top: 20px; right: 24px; width: 36px; height: 36px; border: 1px solid rgba(212,229,240,.2); border-radius: 50%; background: #102131; color: #dce5eb; cursor: pointer; font-size: 19px; }
 .hidden { display: none !important; }
+
+html[data-theme="dark"] .admin-topbar { background: rgba(20, 37, 46, .96); }
+html[data-theme="dark"] .admin-top-actions,
+html[data-theme="dark"] .return-link,
+html[data-theme="dark"] .text-button,
+html[data-theme="dark"] .admin-page-heading p,
+html[data-theme="dark"] .admin-date,
+html[data-theme="dark"] .filter-count,
+html[data-theme="dark"] .data-table td,
+html[data-theme="dark"] .status-pill,
+html[data-theme="dark"] .employee-row span,
+html[data-theme="dark"] .section-toolbar span,
+html[data-theme="dark"] .form-field label,
+html[data-theme="dark"] .table-message,
+html[data-theme="dark"] .login-panel p { color: var(--muted); }
+html[data-theme="dark"] .admin-sidebar { background: rgba(20, 37, 46, .68); }
+html[data-theme="dark"] .sidebar-label,
+html[data-theme="dark"] .sidebar-note,
+html[data-theme="dark"] .stat-label,
+html[data-theme="dark"] .data-table th,
+html[data-theme="dark"] .employee-cell span,
+html[data-theme="dark"] .photo-empty,
+html[data-theme="dark"] .empty-row { color: var(--quiet) !important; }
+html[data-theme="dark"] .side-nav button { color: var(--muted); }
+html[data-theme="dark"] .side-nav button:hover,
+html[data-theme="dark"] .side-nav button.active { border-color: rgba(113, 223, 194, .2); background: #23473f; color: var(--teal); }
+html[data-theme="dark"] .stat-value,
+html[data-theme="dark"] .employee-cell strong,
+html[data-theme="dark"] .employee-row strong { color: var(--ink); }
+html[data-theme="dark"] .filter-search input,
+html[data-theme="dark"] .filter-bar select,
+html[data-theme="dark"] .filter-bar input[type="date"],
+html[data-theme="dark"] .form-input { border-color: var(--line); background: #14252e; color: var(--ink); color-scheme: dark; }
+html[data-theme="dark"] .filter-search input::placeholder,
+html[data-theme="dark"] .form-input::placeholder { color: var(--quiet); }
+html[data-theme="dark"] .table-wrap,
+html[data-theme="dark"] .employee-row,
+html[data-theme="dark"] .add-employee,
+html[data-theme="dark"] .login-panel { border-color: var(--line); background: var(--panel); }
+html[data-theme="dark"] .data-table td { border-bottom-color: var(--line); }
+html[data-theme="dark"] .data-table tbody tr:hover { background: rgba(113, 223, 194, .07); }
+html[data-theme="dark"] .position-tag { border-color: rgba(113, 223, 194, .2); background: #23473f; color: var(--teal) !important; }
+html[data-theme="dark"] .status-pill.open { color: var(--teal); }
+html[data-theme="dark"] .photo-thumb { border-color: var(--line); background: #14252e; }
+html[data-theme="dark"] .employee-action { border-color: var(--line); background: #20353f; color: var(--ink); }
+html[data-theme="dark"] .admin-body .button-secondary { border-color: var(--line); background: #20353f; color: var(--ink); }
+
 @keyframes enter { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 850px) {

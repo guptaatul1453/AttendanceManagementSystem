@@ -16,7 +16,14 @@
             <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
             <span>daywork<span class="brand-light"> / people</span></span>
         </a>
-        <div class="admin-top-actions"><a class="return-link" href="./"><span aria-hidden="true">←</span> Back to attendance</a><button id="logout-button" class="text-button hidden" type="button">Sign out</button></div>
+        <div class="admin-top-actions">
+            <a class="return-link" href="./"><span aria-hidden="true">←</span> Back to attendance</a>
+            <div class="theme-switch" role="group" aria-label="Color theme">
+                <button class="theme-button" type="button" data-theme-choice="light" aria-label="Light mode" title="Light mode" aria-pressed="false"><span aria-hidden="true">☀</span></button>
+                <button class="theme-button" type="button" data-theme-choice="dark" aria-label="Dark mode" title="Dark mode" aria-pressed="false"><span aria-hidden="true">☾</span></button>
+            </div>
+            <button id="logout-button" class="text-button hidden" type="button">Sign out</button>
+        </div>
     </header>
 
     <main id="login-view" class="login-shell hidden">
@@ -86,6 +93,7 @@
         <button id="modal-close" class="modal-close" type="button" aria-label="Close photo">×</button>
         <img id="modal-image" alt="Expanded attendance photo">
     </div>
+    <script src="theme.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>
